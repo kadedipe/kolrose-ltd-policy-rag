@@ -1,4 +1,3 @@
-# app/config.py
 """
 Configuration Management for Kolrose Limited RAG System.
 =========================================================
@@ -432,9 +431,6 @@ APP_CONFIG: AppConfig = _config['app']
 APP_ENV: str = APP_CONFIG.env.value
 LOG_LEVEL: str = APP_CONFIG.log_level.value
 
-# NOTE: The duplicate POLICIES_PATH override that was resetting the path 
-# to "./policies" has been safely removed from this section.
-
 
 # ============================================================================
 # CONFIGURATION VALIDATOR
@@ -538,35 +534,41 @@ def print_config(show_secrets: bool = False):
 
 
 # ============================================================================
-# STREAMLIT SECRETS LOADER (For Streamlit Cloud)
+# STREAMLIT SECRETS LOADER (For Streamlit Cloud / Safeguarded for Local/CLI)
 # ============================================================================
 
 def load_streamlit_secrets():
     """
     Load configuration from Streamlit secrets (for Streamlit Cloud deployment).
+    Safeguarded with a try-except layer so background script invocations don't crash.
     """
     try:
         import streamlit as st
         
         # Override with Streamlit secrets if available
         if hasattr(st, 'secrets'):
-            secrets = st.secrets
-            
-            # API
-            if 'OPENROUTER_API_KEY' in secrets:
-                os.environ['OPENROUTER_API_KEY'] = secrets['OPENROUTER_API_KEY']
-            if 'LLM_MODEL' in secrets:
-                os.environ['LLM_MODEL'] = secrets['LLM_MODEL']
-            
-            # Embeddings
-            if 'EMBEDDING_DEVICE' in secrets:
-                os.environ['EMBEDDING_DEVICE'] = secrets['EMBEDDING_DEVICE']
-            
-            # Guardrails
-            if 'ENABLE_GUARDRAILS' in secrets:
-                os.environ['ENABLE_GUARDRAILS'] = secrets['ENABLE_GUARDRAILS']
-            
-            logger.info("✅ Loaded configuration from Streamlit secrets")
+            try:
+                secrets = st.secrets
+                
+                # API
+                if 'OPENROUTER_API_KEY' in secrets:
+                    os.environ['OPENROUTER_API_KEY'] = secrets['OPENROUTER_API_KEY']
+                if 'LLM_MODEL' in secrets:
+                    os.environ['LLM_MODEL'] = secrets['LLM_MODEL']
+                
+                # Embeddings
+                if 'EMBEDDING_DEVICE' in secrets:
+                    os.environ['EMBEDDING_DEVICE'] = secrets['EMBEDDING_DEVICE']
+                
+                # Guardrails
+                if 'ENABLE_GUARDRAILS' in secrets:
+                    os.environ['ENABLE_GUARDRAILS'] = secrets['ENABLE_GUARDRAILS']
+                
+                logger.info("✅ Loaded configuration from Streamlit secrets")
+            except Exception:
+                # Catching StreamlitSecretNotFoundError when executed as a raw Python CLI command
+                logger.info("ℹ️ Streamlit secrets file not found. Falling back to native system environment variables.")
+                pass
             
     except ImportError:
         pass  # Not running in Streamlit
