@@ -1,0 +1,15 @@
+venv/
+__pycache__/
+*.pyc
+chroma_db/
+DATA/
+NOTEBOOKS/
+evaluation_results/
+docs/images/
+*.ipynb
+.env
+*.log
+.pytest_cache/
+dist/
+build/
+*.sqlite3

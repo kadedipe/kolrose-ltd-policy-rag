@@ -1,0 +1,43 @@
+# ============================================================================
+# Kolrose Limited - Policy RAG Assistant
+# Requirements for Railway Deployment
+# ============================================================================
+
+# =========================
+# Backend
+# =========================
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+pydantic>=2.8.0
+
+# =========================
+# RAG
+# =========================
+langchain>=0.2.0
+langchain-community>=0.2.0
+langchain-core>=0.2.0
+langchain-text-splitters>=0.2.0
+
+chromadb>=0.5.0
+
+sentence-transformers>=4.44.0
+torch>=2.4.0
+--extra-index-url https://download.pytorch.org/whl/cpu
+
+requests>=2.31.0
+httpx>=0.27.0
+
+numpy>=1.26,<2.0
+pandas>=2.2.0
+
+python-dotenv>=1.0.1
+
+gdown>=5.2.0
+
+tenacity>=8.2.3
+tqdm>=4.66
+pyyaml>=6.0
+
+PyJWT>=2.8.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.9

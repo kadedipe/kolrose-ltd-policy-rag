@@ -1,0 +1,21 @@
+Company Background Context
+
+Kolrose Limited is a mid-sized technology consulting and project management firm 
+headquartered in Abuja, Nigeria, with approximately 150 employees. The company 
+was founded in 2009 and specializes in IT infrastructure, software development, 
+and government digital transformation projects across Nigeria.
+
+Policy Document Structure
+
+POLICY DOCUMENT 1: Employee Handbook Overview
+POLICY DOCUMENT 2: Leave and Time-Off Policy
+POLICY DOCUMENT 3: Code of Conduct
+POLICY DOCUMENT 4: Remote Work Policy
+POLICY DOCUMENT 5: IT Security and Acceptable Use Policy
+POLICY DOCUMENT 6: Expenses and Reimbursement Policy
+POLICY DOCUMENT 7: Performance Management Policy
+POLICY DOCUMENT 8: Training and Development Policy
+POLICY DOCUMENT 9: Travel Policy
+POLICY DOCUMENT 10: Procurement Policy
+POLICY DOCUMENT 11: Health and Safety Policy
+POLICY DOCUMENT 12: Grievance and Dispute Resolution Policy

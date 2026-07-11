@@ -1,0 +1,6 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+# Build the vector database using python -m app.ingestion, then start the API server
+startCommand = "python -m app.ingestion && uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $PORT"
