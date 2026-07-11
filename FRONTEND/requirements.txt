@@ -1,0 +1,2 @@
+streamlit
+# Add any other frontend dependencies here (e.g., requests, pandas, etc.)
