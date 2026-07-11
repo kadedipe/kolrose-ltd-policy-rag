@@ -1,0 +1,48 @@
+# render.yaml
+# Kolrose Limited - Policy Assistant
+# Render Blueprint Configuration
+
+services:
+  # Main Web Application
+  - type: web
+    name: kolrose-policy-rag
+    env: python
+    region: oregon  # or frankfurt, singapore
+    plan: free
+    branch: main
+    buildCommand: |
+      pip install -r requirements.txt
+      mkdir -p chroma_db
+      python -m app.ingestion
+    startCommand: streamlit run app/main.py --server.port $PORT --server.address 0.0.0.0
+    healthCheckPath: /health
+    envVars:
+      - key: OPENROUTER_API_KEY
+        sync: false  # Set manually in Render dashboard
+      - key: LLM_MODEL
+        value: google/gemini-2.0-flash-001
+      - key: EMBEDDING_DEVICE
+        value: cpu
+      - key: APP_ENV
+        value: production
+      - key: CHROMA_PATH
+        value: /var/data/chroma_db
+      - key: POLICIES_PATH
+        value: ./policies
+      - key: ENABLE_GUARDRAILS
+        value: "true"
+      - key: LOG_LEVEL
+        value: INFO
+    disk:
+      name: chroma-data
+      mountPath: /var/data
+      sizeGB: 1  # Free tier includes 1GB
+    autoDeploy: true
+
+  # Optional: Background worker for periodic tasks
+  # - type: worker
+  #   name: kolrose-worker
+  #   env: python
+  #   plan: free
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: python -m app.worker
