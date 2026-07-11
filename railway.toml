@@ -1,7 +1,6 @@
-# Backend service settings
 [build]
 builder = "dockerfile"
-dockerfilePath = "Dockerfile"
+dockerfilePath = "DOCKER/Dockerfile"
 
 [deploy]
 preDeployCommand = "python -m app.ingestion"
