@@ -25,10 +25,10 @@ WORKDIR /app
 COPY --from=builder /root/.local /root/.local
 ENV PATH=/root/.local/bin:$PATH
 
-# Copy application code
-COPY app/ ./app/
-COPY policies/ ./policies/
-COPY streamlit_app.py .
+# Copy application code from nested directories
+COPY BACKEND/app/ ./app/
+COPY BACKEND/policies/ ./policies/
+COPY FRONTEND/streamlit_app.py .
 
 # Create directories
 RUN mkdir -p chroma_db
@@ -44,4 +44,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8501/health')" || exit 1
 
 # Run application
-CMD ["streamlit", "run", "app/main.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
+CMD ["streamlit", "run", "streamlit_app.py", "--server.port", "8501", "--server.address", "0.0.0.0"]
