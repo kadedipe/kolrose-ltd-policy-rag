@@ -3,4 +3,4 @@ builder = "dockerfile"
 dockerfilePath = "DOCKER/Dockerfile"
 
 [deploy]
-# We remove startCommand so Railway defers entirely to your Dockerfile's Streamlit CMD!
+preDeployCommand = "python -m app.ingestion"

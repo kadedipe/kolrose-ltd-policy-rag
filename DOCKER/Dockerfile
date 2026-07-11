@@ -33,9 +33,6 @@ COPY FRONTEND/streamlit_app.py .
 # Create directories
 RUN mkdir -p chroma_db
 
-# Run ingestion during build
-RUN python -m app.ingestion
-
 # Expose port
 EXPOSE 8501
 
