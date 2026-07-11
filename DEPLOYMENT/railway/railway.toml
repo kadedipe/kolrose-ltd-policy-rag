@@ -1,0 +1,30 @@
+# railway.toml
+# Kolrose Limited - Policy Assistant
+# Railway Configuration
+
+[build]
+builder = "nixpacks"
+buildCommand = "pip install -r requirements.txt && python -m app.ingestion"
+
+[deploy]
+startCommand = "streamlit run app/main.py --server.port $PORT --server.address 0.0.0.0"
+healthcheckPath = "/health"
+restartPolicyMaxRetries = 3
+
+[service]
+name = "kolrose-policy-rag"
+
+[service.env]
+OPENROUTER_API_KEY = "${OPENROUTER_API_KEY}"
+LLM_MODEL = "google/gemini-2.0-flash-001"
+EMBEDDING_DEVICE = "cpu"
+APP_ENV = "production"
+CHROMA_PATH = "/app/chroma_db"
+POLICIES_PATH = "./policies"
+ENABLE_GUARDRAILS = "true"
+LOG_LEVEL = "INFO"
+
+[service.disk]
+name = "chroma"
+mountPath = "/app/chroma_db"
+sizeGB = 1
