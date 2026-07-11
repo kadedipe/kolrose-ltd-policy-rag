@@ -1,5 +1,6 @@
 [build]
-builder = "NIXPACKS"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 startCommand = "streamlit run FRONTEND/streamlit_app.py --server.port $PORT --server.address 0.0.0.0"
