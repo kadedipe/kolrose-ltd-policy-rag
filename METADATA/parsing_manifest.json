@@ -1,0 +1,102 @@
+{
+  "timestamp": "2026-05-06 09:22:48.851660",
+  "document_stats": [
+    {
+      "file": "Code-of-Conduct.md",
+      "doc_id": "KOL-HR-003",
+      "department": "Human Resources / Legal",
+      "raw_length": 3845,
+      "cleaned_length": 3843,
+      "chunks": 12
+    },
+    {
+      "file": "Employee-Handbook-Overview.md",
+      "doc_id": "KOL-HR-001",
+      "department": "Human Resources",
+      "raw_length": 2880,
+      "cleaned_length": 2872,
+      "chunks": 9
+    },
+    {
+      "file": "Expenses-and-Reimbursement-Policy.md",
+      "doc_id": "KOL-FIN-001",
+      "department": "Finance",
+      "raw_length": 5808,
+      "cleaned_length": 5805,
+      "chunks": 19
+    },
+    {
+      "file": "Grievance-and-Dispute-Resolution-Policy.md",
+      "doc_id": "KOL-HR-008",
+      "department": "Human Resources",
+      "raw_length": 12399,
+      "cleaned_length": 12369,
+      "chunks": 32
+    },
+    {
+      "file": "Health-and-Safety-Policy.md",
+      "doc_id": "KOL-ADMIN-002",
+      "department": "Administration",
+      "raw_length": 9081,
+      "cleaned_length": 9076,
+      "chunks": 25
+    },
+    {
+      "file": "IT-Security-and-Acceptable-Use-Policy.md",
+      "doc_id": "KOL-IT-001",
+      "department": "Technology Infrastructure Division (TID)",
+      "raw_length": 7224,
+      "cleaned_length": 7221,
+      "chunks": 22
+    },
+    {
+      "file": "Leave-and-Time-Off-Policy.md",
+      "doc_id": "KOL-HR-002",
+      "department": "Human Resources",
+      "raw_length": 4244,
+      "cleaned_length": 4233,
+      "chunks": 18
+    },
+    {
+      "file": "Performance-Management-Policy.md",
+      "doc_id": "KOL-HR-006",
+      "department": "Human Resources",
+      "raw_length": 6691,
+      "cleaned_length": 6688,
+      "chunks": 20
+    },
+    {
+      "file": "Procurement-Policy.md",
+      "doc_id": "KOL-FIN-002",
+      "department": "Finance / Administration",
+      "raw_length": 8636,
+      "cleaned_length": 8636,
+      "chunks": 24
+    },
+    {
+      "file": "Remote-Work-Policy.md",
+      "doc_id": "KOL-HR-005",
+      "department": "Human Resources",
+      "raw_length": 6411,
+      "cleaned_length": 6406,
+      "chunks": 20
+    },
+    {
+      "file": "Training-and-Development-Policy.md",
+      "doc_id": "KOL-HR-007",
+      "department": "Human Resources",
+      "raw_length": 8651,
+      "cleaned_length": 8645,
+      "chunks": 20
+    },
+    {
+      "file": "Travel-Policy.md",
+      "doc_id": "KOL-ADMIN-001",
+      "department": "Administration",
+      "raw_length": 10516,
+      "cleaned_length": 10509,
+      "chunks": 29
+    }
+  ],
+  "total_chunks": 250
+}

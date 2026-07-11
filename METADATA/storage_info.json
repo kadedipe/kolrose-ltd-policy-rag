@@ -1,0 +1,15 @@
+{
+  "storage_type": "ChromaDB (local)",
+  "persistence": "Google Drive",
+  "collection_name": "kolrose_policies_v2",
+  "vector_count": 500,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "embedding_dimension": 384,
+  "storage_size_mb": 4.3,
+  "cost": "FREE",
+  "chunk_strategy": "header-aware semantic",
+  "chunk_size": 500,
+  "chunk_overlap": 100,
+  "created_at": "2026-05-06T09:28:52.931905",
+  "reconnect_command": "Chroma(persist_directory='/content/drive/MyDrive/kolrose-policy-rag/chroma_db', embedding_function=embeddings, collection_name='kolrose_policies_v2')"
+}

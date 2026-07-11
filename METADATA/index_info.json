@@ -1,0 +1,13 @@
+{
+  "timestamp": "2026-05-06 09:23:31.606758",
+  "collection_name": "kolrose_policies_v2",
+  "total_chunks": 250,
+  "embedding_model": "all-MiniLM-L6-v2",
+  "embedding_dimension": 384,
+  "device": "cuda",
+  "chunk_size": 500,
+  "chunk_overlap": 100,
+  "indexing_time_seconds": 1.539703369140625,
+  "throughput_chunks_per_sec": 162.36893742691217,
+  "cost": "FREE (local embeddings)"
+}
