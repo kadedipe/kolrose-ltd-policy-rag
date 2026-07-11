@@ -3,5 +3,4 @@ builder = "dockerfile"
 dockerfilePath = "DOCKER/Dockerfile"
 
 [deploy]
-preDeployCommand = "python -m app.ingestion"
-startCommand = "uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $PORT"
+# We remove startCommand so Railway defers entirely to your Dockerfile's Streamlit CMD!
