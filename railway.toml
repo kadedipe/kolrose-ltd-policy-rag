@@ -1,6 +1,7 @@
 # Backend service settings
 [build]
-builder = "NIXPACKS"
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
 preDeployCommand = "python -m app.ingestion"
