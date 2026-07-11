@@ -1,6 +1,12 @@
+# Default settings (e.g., for your backend service)
 [build]
-builder = "nixpacks"
+builder = "NIXPACKS"
 
 [deploy]
-# Build the vector database using python -m app.ingestion, then start the API server
-startCommand = "python -m app.ingestion && uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $PORT"
+preDeployCommand = "python -m app.ingestion"
+startCommand = "uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $PORT"
+
+# Overrides for your Streamlit service 
+# (You will apply the "streamlit" service name variable in the Railway dashboard)
+[services.kolrose-frontend.deploy]
+startCommand = "streamlit run app_frontend.py --server.port $PORT --server.address 0.0.0.0"
