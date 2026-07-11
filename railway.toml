@@ -9,4 +9,5 @@ startCommand = "uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $POR
 # Overrides for your Streamlit service 
 # (You will apply the "streamlit" service name variable in the Railway dashboard)
 [services.kolrose-frontend.deploy]
-startCommand = "streamlit run app_frontend.py --server.port $PORT --server.address 0.0.0.0"
+preDeployCommand = ""
+startCommand = "streamlit run FRONTEND/streamlit_app.py --server.port $PORT --server.address 0.0.0.0"
