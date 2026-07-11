@@ -1,13 +1,7 @@
-# Default settings (e.g., for your backend service)
+# Backend service settings
 [build]
 builder = "NIXPACKS"
 
 [deploy]
 preDeployCommand = "python -m app.ingestion"
 startCommand = "uvicorn app.api:app --app-dir BACKEND --host 0.0.0.0 --port $PORT"
-
-# Overrides for your Streamlit service 
-# (You will apply the "streamlit" service name variable in the Railway dashboard)
-[services.kolrose-frontend.deploy]
-preDeployCommand = ""
-startCommand = "streamlit run FRONTEND/streamlit_app.py --server.port $PORT --server.address 0.0.0.0"
