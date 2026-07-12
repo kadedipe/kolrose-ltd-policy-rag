@@ -1,6 +1,0 @@
-[build]
-builder = "dockerfile"
-dockerfilePath = "DOCKER/Dockerfile"
-
-[deploy]
-preDeployCommand = "python -m app.ingestion"

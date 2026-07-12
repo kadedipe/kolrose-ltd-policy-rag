@@ -14,9 +14,14 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-# Add backend path
-BACKEND_PATH = str(Path(__file__).parent.parent.parent / "BACKEND")
-sys.path.insert(0, BACKEND_PATH)
+# =========================
+# PATH SETUP (FIXED)
+# =========================
+# File location: /app/BACKEND/app/api.py
+# parent = /app/BACKEND/app
+# parent.parent = /app/BACKEND ← Add this to sys.path
+BACKEND_ROOT = str(Path(__file__).resolve().parent.parent)
+sys.path.insert(0, BACKEND_ROOT)
 
 from app.config import (
     COMPANY_INFO,
@@ -35,8 +40,6 @@ from app.ingestion import load_vectorstore, check_policies_exist
 # =========================
 # FASTAPI APP
 # =========================
-# Change the instance name to 'app' so the Uvicorn start command 
-# 'app.api:app' finds it successfully without throwing a boot error.
 app = FastAPI(
     title="Kolrose Policy Assistant API",
     version="1.0.0"
@@ -98,9 +101,6 @@ SYSTEM_READY = rag is not None
 # ENDPOINTS
 # =========================
 
-# ============================================================
-# ROOT ROUTE (LANDING PAGE)
-# ============================================================
 @app.get("/")
 def read_root():
     return {

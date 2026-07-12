@@ -1,53 +1,26 @@
 # DOCKER/Dockerfile.backend
-# Kolrose Limited - Backend API Service
-# Multi-stage build for smaller image size
-
-FROM python:3.11-slim as builder
-
-WORKDIR /app
-
-# Install build dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy backend requirements
-COPY BACKEND/requirements.txt .
-RUN pip install --user --no-cache-dir -r requirements.txt
-
-# Final stage
 FROM python:3.11-slim
 
 WORKDIR /app
 
-# Install runtime dependencies
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl \
+RUN apt-get update && apt-get install -y --no-install-recommends curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy Python packages from builder
-COPY --from=builder /root/.local /root/.local
-ENV PATH=/root/.local/bin:$PATH
+COPY BACKEND/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy backend application code
-COPY BACKEND/app/ ./app/
-COPY BACKEND/policies/ ./policies/
+COPY BACKEND/ ./BACKEND/
 
-# Set environment variables
-ENV CHROMA_PATH=/tmp/chroma_db
-ENV POLICIES_PATH=/app/policies
 ENV PYTHONUNBUFFERED=1
+ENV CHROMA_PATH=/tmp/chroma_db
+ENV POLICIES_PATH=/app/BACKEND/policies
 
-# Create writable temp directory for ChromaDB
 RUN mkdir -p /tmp/chroma_db
 
-# Expose FastAPI port
-EXPOSE 8000
+EXPOSE 8080
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD curl --fail http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8080/health || exit 1
 
-# Run FastAPI backend
-CMD ["uvicorn", "app.app:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+# api.py is the main FastAPI file - this is correct!
+CMD ["uvicorn", "BACKEND.app.api:app", "--host", "0.0.0.0", "--port", "8080"]
