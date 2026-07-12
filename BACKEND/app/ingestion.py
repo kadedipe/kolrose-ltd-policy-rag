@@ -28,7 +28,13 @@ from langchain_text_splitters import (
     MarkdownHeaderTextSplitter,
 )
 from langchain_community.vectorstores import Chroma
-from langchain_community.embeddings import HuggingFaceEmbeddings
+
+# Use new langchain-huggingface if available, fallback to community
+try:
+    from langchain_huggingface import HuggingFaceEmbeddings
+except ImportError:
+    from langchain_community.embeddings import HuggingFaceEmbeddings
+
 from langchain_core.documents import Document
 
 from .config import (
@@ -64,9 +70,7 @@ class DocumentCleaner:
     
     @staticmethod
     def clean(text: str) -> str:
-        """
-        Apply all cleaning steps to document text.
-        """
+        """Apply all cleaning steps to document text."""
         text = DocumentCleaner._normalize_unicode(text)
         text = DocumentCleaner._normalize_whitespace(text)
         text = DocumentCleaner._fix_markdown_formatting(text)
@@ -96,21 +100,16 @@ class DocumentCleaner:
     def _normalize_whitespace(text: str) -> str:
         """Normalize whitespace without breaking markdown structure"""
         text = text.replace('\t', '    ')
-        
         lines = text.split('\n')
         cleaned = []
         prev_blank = False
-        
         for line in lines:
             stripped = line.rstrip()
             is_blank = not stripped
-            
             if is_blank and prev_blank:
                 continue
-            
             cleaned.append(stripped)
             prev_blank = is_blank
-        
         return '\n'.join(cleaned)
     
     @staticmethod
@@ -127,7 +126,6 @@ class DocumentCleaner:
         sections = text.split('\n## ')
         if len(sections) <= 1:
             return text
-        
         kept = [sections[0]]
         for section in sections[1:]:
             lines = section.split('\n')
@@ -137,7 +135,6 @@ class DocumentCleaner:
             ]
             if content_lines:
                 kept.append('## ' + section)
-        
         return '\n'.join(kept)
 
 
@@ -181,20 +178,15 @@ class MetadataExtractor:
             'approved_by': 'UNKNOWN',
             'effective_date': 'UNKNOWN',
         }
-        
         header = content[:1000]
-        
         for field, pattern in cls.PATTERNS.items():
             match = re.search(pattern, header, re.MULTILINE)
             if match:
                 metadata[field] = match.group(1).strip()
-        
         match = re.search(cls.POLICY_NAME_PATTERN, header, re.MULTILINE)
         if match:
             metadata['policy_name'] = match.group(1).strip()
-        
         metadata['category'] = cls._get_category(metadata.get('document_id', ''))
-        
         return metadata
     
     @classmethod
@@ -271,10 +263,8 @@ class DocumentChunker:
         if self._has_sufficient_headers(content):
             try:
                 md_chunks = self.header_splitter.split_text(content)
-                
                 for i, chunk in enumerate(md_chunks):
                     section_path = self._build_section_path(chunk.metadata)
-                    
                     chunk_metadata = {
                         **metadata,
                         'chunk_index': i,
@@ -284,34 +274,27 @@ class DocumentChunker:
                         'section_header': chunk.metadata.get('section_header', ''),
                         'subsection_header': chunk.metadata.get('subsection_header', ''),
                     }
-                    
                     chunks.append(Document(
                         page_content=chunk.page_content,
                         metadata=chunk_metadata,
                     ))
-                
                 return chunks
-                
             except Exception as e:
                 logger.warning(f"Header splitting failed: {e}, falling back to semantic")
         
         semantic_chunks = self.semantic_splitter.split_text(content)
-        
         for i, chunk_text in enumerate(semantic_chunks):
             section_context = self._find_nearest_header(content, chunk_text)
-            
             chunk_metadata = {
                 **metadata,
                 'chunk_index': i,
                 'chunk_type': 'semantic_fallback',
                 'section_path': section_context or metadata.get('policy_name', 'Unknown'),
             }
-            
             chunks.append(Document(
                 page_content=chunk_text,
                 metadata=chunk_metadata,
             ))
-        
         return chunks
     
     def _has_sufficient_headers(self, content: str) -> bool:
@@ -327,7 +310,6 @@ class DocumentChunker:
             if value:
                 cleaned = re.sub(r'^#+\s*', '', value)
                 parts.append(cleaned)
-        
         return ' > '.join(parts) if parts else 'Main Section'
     
     def _find_nearest_header(self, full_content: str, chunk_text: str) -> Optional[str]:
@@ -335,45 +317,28 @@ class DocumentChunker:
         chunk_start = full_content.find(chunk_text[:100])
         if chunk_start == -1:
             return None
-        
         preceding = full_content[:chunk_start]
-        headers = list(re.finditer(
-            r'^(#{2,4})\s+(.+?)$',
-            preceding,
-            re.MULTILINE,
-        ))
-        
+        headers = list(re.finditer(r'^(#{2,4})\s+(.+?)$', preceding, re.MULTILINE))
         if headers:
             return headers[-1].group(2).strip()
-        
         return None
     
-    def chunk_all(
-        self,
-        documents: List[Dict[str, Any]],
-    ) -> List[Document]:
+    def chunk_all(self, documents: List[Dict[str, Any]]) -> List[Document]:
         """Chunk all loaded documents."""
         all_chunks = []
-        
         for doc in documents:
             content = doc.get('content', '')
             metadata = doc.get('metadata', {})
-            
             if not content:
                 continue
-            
             chunks = self.chunk_document(content, metadata)
-            
             for chunk in chunks:
                 chunk.metadata['content_hash'] = hashlib.md5(
                     chunk.page_content.encode('utf-8')
                 ).hexdigest()[:16]
-            
             all_chunks.extend(chunks)
-        
         for i, chunk in enumerate(all_chunks):
             chunk.metadata['chunk_id'] = f"chunk_{i:05d}"
-        
         return all_chunks
 
 
@@ -395,16 +360,13 @@ class PolicyDocumentLoader:
     def find_policy_files(self) -> List[Path]:
         """Find all policy markdown files (recursively)"""
         files = []
-        
         if not self.policies_path.exists():
             logger.error(f"Policies path does not exist: {self.policies_path}")
             return files
-        
         for root, dirs, filenames in os.walk(self.policies_path):
             for filename in sorted(filenames):
                 if filename.endswith('.md') and filename != 'README.md':
                     files.append(Path(root) / filename)
-        
         return files
     
     def load_document(self, filepath: Path) -> Optional[Dict[str, Any]]:
@@ -412,19 +374,12 @@ class PolicyDocumentLoader:
         try:
             loader = TextLoader(str(filepath), encoding='utf-8')
             docs = loader.load()
-            
             if not docs:
                 logger.warning(f"Empty document: {filepath}")
                 return None
-            
             raw_content = docs[0].page_content
             cleaned_content = self.cleaner.clean(raw_content)
-            
-            metadata = self.metadata_extractor.extract(
-                cleaned_content,
-                filepath.name,
-            )
-            
+            metadata = self.metadata_extractor.extract(cleaned_content, filepath.name)
             return {
                 'content': cleaned_content,
                 'metadata': metadata,
@@ -433,7 +388,6 @@ class PolicyDocumentLoader:
                 'raw_length': len(raw_content),
                 'cleaned_length': len(cleaned_content),
             }
-            
         except Exception as e:
             logger.error(f"Failed to load {filepath}: {e}")
             return None
@@ -441,21 +395,15 @@ class PolicyDocumentLoader:
     def load_all(self) -> List[Dict[str, Any]]:
         """Load all policy documents"""
         files = self.find_policy_files()
-        
         if not files:
             logger.warning(f"No policy files found in {self.policies_path}")
             return []
-        
         documents = []
         for filepath in files:
             doc = self.load_document(filepath)
             if doc:
                 documents.append(doc)
-                logger.info(
-                    f"Loaded: {doc['metadata'].get('document_id', 'N/A')} - "
-                    f"{doc['metadata'].get('policy_name', filepath.name)}"
-                )
-        
+                logger.info(f"Loaded: {doc['metadata'].get('document_id', 'N/A')} - {doc['metadata'].get('policy_name', filepath.name)}")
         logger.info(f"Loaded {len(documents)} policy documents")
         return documents
 
@@ -520,15 +468,10 @@ class VectorStoreManager:
         path = Path(self.persist_directory)
         return path.exists() and any(path.iterdir())
     
-    def create(
-        self,
-        chunks: List[Document],
-        embeddings: HuggingFaceEmbeddings,
-    ) -> Chroma:
+    def create(self, chunks: List[Document], embeddings: HuggingFaceEmbeddings) -> Chroma:
         """Create a new vector store from document chunks."""
         logger.info(f"Creating vector store: {self.collection_name}")
         logger.info(f"Indexing {len(chunks)} chunks...")
-        
         vectorstore = Chroma.from_documents(
             documents=chunks,
             embedding=embeddings,
@@ -541,40 +484,25 @@ class VectorStoreManager:
                 "chunk_count": str(len(chunks)),
             },
         )
-        
-        vectorstore.persist()
-        
         logger.info(f"Vector store created with {len(chunks)} vectors")
         logger.info(f"Persisted to: {self.persist_directory}")
-        
         return vectorstore
     
     def load(self, embeddings: HuggingFaceEmbeddings) -> Chroma:
         """Load an existing vector store."""
         if not self.exists():
-            raise FileNotFoundError(
-                f"Vector store not found at {self.persist_directory}. "
-                "Run ingestion first."
-            )
-        
+            raise FileNotFoundError(f"Vector store not found at {self.persist_directory}. Run ingestion first.")
         logger.info(f"Loading vector store: {self.collection_name}")
-        
         vectorstore = Chroma(
             persist_directory=self.persist_directory,
             embedding_function=embeddings,
             collection_name=self.collection_name,
         )
-        
         count = vectorstore._collection.count()
         logger.info(f"Loaded {count} vectors from {self.persist_directory}")
-        
         return vectorstore
     
-    def get_or_create(
-        self,
-        chunks: List[Document],
-        embeddings: HuggingFaceEmbeddings,
-    ) -> Chroma:
+    def get_or_create(self, chunks: List[Document], embeddings: HuggingFaceEmbeddings) -> Chroma:
         """Load existing vector store or create new one."""
         if self.exists():
             return self.load(embeddings)
@@ -594,15 +522,6 @@ def ingest_policies(
     """
     Complete ingestion pipeline:
     Load → Clean → Extract Metadata → Chunk → Embed → Index
-    
-    Args:
-        policies_path: Path to policy markdown files
-        chroma_path: Path for ChromaDB persistence
-        force_recreate: If True, recreate vector store even if exists
-        verbose: Print progress information
-        
-    Returns:
-        Tuple of (vectorstore, ingestion_stats)
     """
     start_time = datetime.now()
     
@@ -626,10 +545,8 @@ def ingest_policies(
     # Step 1: Load documents
     if verbose:
         print("\n[1/4] Loading policy documents...")
-    
     loader = PolicyDocumentLoader(policies_path)
     documents = loader.load_all()
-    
     stats['documents_found'] = len(loader.find_policy_files())
     stats['documents_loaded'] = len(documents)
     
@@ -649,10 +566,8 @@ def ingest_policies(
     # Step 2: Chunk documents
     if verbose:
         print(f"\n[2/4] Chunking documents...")
-    
     chunker = DocumentChunker()
     chunks = chunker.chunk_all(documents)
-    
     stats['chunks_created'] = len(chunks)
     
     if not chunks:
@@ -674,9 +589,7 @@ def ingest_policies(
     # Step 3: Load embeddings
     if verbose:
         print(f"\n[3/4] Loading embedding model...")
-    
     embeddings = load_embeddings()
-    
     if verbose:
         print(f"   ✅ Model: {EMBEDDING_MODEL}")
         print(f"   ✅ Device: {EMBEDDING_DEVICE}")
@@ -684,7 +597,6 @@ def ingest_policies(
     # Step 4: Create/update vector store
     if verbose:
         print(f"\n[4/4] Indexing into vector store...")
-    
     store_manager = VectorStoreManager(chroma_path)
     
     if force_recreate and store_manager.exists():
@@ -695,11 +607,9 @@ def ingest_policies(
     try:
         vectorstore = store_manager.get_or_create(chunks, embeddings)
         stats['vectors_indexed'] = vectorstore._collection.count()
-        
         if verbose:
             print(f"   ✅ Indexed {stats['vectors_indexed']} vectors")
             print(f"   💾 Persisted to: {chroma_path}")
-            
     except Exception as e:
         error_msg = f"Vector store creation failed: {str(e)}"
         stats['errors'].append(error_msg)
@@ -733,21 +643,12 @@ def load_vectorstore(
     chroma_path: str = CHROMA_PATH,
     collection_name: str = COLLECTION_NAME,
 ) -> Optional[Chroma]:
-    """
-    Load an existing vector store.
-    Use this in the web app to avoid re-ingestion.
-    
-    Returns:
-        Chroma vector store or None if not found
-    """
+    """Load an existing vector store. Use this in the web app to avoid re-ingestion."""
     store_manager = VectorStoreManager(chroma_path, collection_name)
-    
     if not store_manager.exists():
         logger.warning(f"Vector store not found at {chroma_path}")
         return None
-    
     embeddings = load_embeddings()
-    
     try:
         return store_manager.load(embeddings)
     except Exception as e:
@@ -766,21 +667,12 @@ def ingest_all(
     """
     Ingest all policy documents and return a vector store.
     Used as a fallback when vector store doesn't exist on cold starts.
-    
-    Args:
-        policies_path: Path to policy files (uses env/config default if None)
-        chroma_path: Path for ChromaDB persistence (uses env/config default if None)
-    
-    Returns:
-        Chroma vector store or None if ingestion fails
     """
-    # Use provided paths or fall back to configured defaults
     if policies_path is None:
         policies_path = os.environ.get("POLICIES_PATH", POLICIES_PATH)
     if chroma_path is None:
         chroma_path = os.environ.get("CHROMA_PATH", CHROMA_PATH)
     
-    # On Railway/cloud platforms, ensure writable temp directory
     is_cloud = bool(
         os.environ.get("RAILWAY_ENVIRONMENT") or 
         os.environ.get("PORT") or
@@ -818,18 +710,12 @@ def ingest_all(
 def get_ingestion_stats(chroma_path: str = CHROMA_PATH) -> Dict[str, Any]:
     """Get statistics about the ingested vector store"""
     store_manager = VectorStoreManager(chroma_path)
-    
     if not store_manager.exists():
-        return {
-            'exists': False,
-            'message': f"No vector store at {chroma_path}",
-        }
-    
+        return {'exists': False, 'message': f"No vector store at {chroma_path}"}
     try:
         embeddings = load_embeddings()
         vectorstore = store_manager.load(embeddings)
         count = vectorstore._collection.count()
-        
         return {
             'exists': True,
             'vector_count': count,
@@ -838,26 +724,19 @@ def get_ingestion_stats(chroma_path: str = CHROMA_PATH) -> Dict[str, Any]:
             'embedding_model': EMBEDDING_MODEL,
         }
     except Exception as e:
-        return {
-            'exists': True,
-            'error': str(e),
-            'path': chroma_path,
-        }
+        return {'exists': True, 'error': str(e), 'path': chroma_path}
 
 
 def check_policies_exist(policies_path: str = POLICIES_PATH) -> Tuple[bool, int, List[str]]:
     """Check if policy files exist"""
     path = Path(policies_path)
-    
     if not path.exists():
         return False, 0, []
-    
     files = []
     for root, dirs, filenames in os.walk(path):
         for f in sorted(filenames):
             if f.endswith('.md') and f != 'README.md':
                 files.append(f)
-    
     return len(files) > 0, len(files), files
 
 
@@ -871,7 +750,6 @@ if __name__ == "__main__":
     print(f"  {COMPANY_INFO['address']}")
     print(f"{'='*60}\n")
     
-    # Check for policies
     exists, count, files = check_policies_exist()
     
     if not exists:
@@ -881,25 +759,21 @@ if __name__ == "__main__":
     
     print(f"📁 Found {count} policy files")
     
-    # Determine if we should recreate
     store_manager = VectorStoreManager()
     force_recreate_flag = False
 
     if store_manager.exists():
-        # Non-interactive environments: skip recreation
         if os.getenv("RAILWAY_ENVIRONMENT") or os.getenv("PORT") or not sys.stdin.isatty():
             print(f"\n⚠️ Vector store already exists at {CHROMA_PATH}")
             print("   Non-interactive or Cloud environment detected. Skipping recreation.")
             force_recreate_flag = False
         else:
-            # Interactive: ask user
             try:
                 response = input(
                     f"\n⚠️ Vector store already exists at {CHROMA_PATH}\n"
                     "   [R]ecreate | [S]kip | [Q]uit\n"
                     "   Choice: "
                 ).strip().lower()
-                
                 if response == 'q':
                     print("Exiting.")
                     sys.exit(0)
@@ -915,7 +789,6 @@ if __name__ == "__main__":
     else:
         force_recreate_flag = True
     
-    # Execute ingestion
     if force_recreate_flag or not store_manager.exists():
         vectorstore, stats = ingest_policies(force_recreate=force_recreate_flag)
         if stats.get('success'):
