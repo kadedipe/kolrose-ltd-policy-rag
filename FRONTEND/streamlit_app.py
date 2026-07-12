@@ -20,8 +20,7 @@ BACKEND_URL = os.environ.get(
 
 # Logo path - tries local file first, falls back to URL
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "static", "kolrose.jfif")
-LOGO_URL = "https://raw.githubusercontent.com/your-repo/main/docs/images/kolrose.jfif"
-
+LOGO_URL = "https://github.com/kadedipe/kolrose-ltd-policy-rag/blob/main/docs/images/kolrose.jfif"
 # =========================
 # STREAMLIT UI SETUP
 # =========================
