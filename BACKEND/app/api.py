@@ -80,7 +80,7 @@ class ChatResponse(BaseModel):
     timestamp: str
 
 # =========================
-# INIT SYSTEM
+# INIT SYSTEM WITH AUTO-INGESTION
 # =========================
 
 print("=" * 50)
@@ -89,6 +89,7 @@ print(f"📂 ChromaDB Path: {CHROMA_PATH}")
 print(f"📄 Policies Path: {POLICIES_PATH}")
 print("=" * 50)
 
+# Try to load existing vector store
 print("🔄 Loading vector store...")
 vectorstore = load_vectorstore()
 
@@ -108,24 +109,26 @@ if vectorstore is None:
     else:
         print(f"❌ No policy files found in: {POLICIES_PATH}")
 
-print(f"✅ Vector store loaded: {vectorstore is not None}")
+print(f"Vector store loaded: {vectorstore is not None}")
 
+# Initialize RAG system
 print("🔄 Initializing RAG system...")
 rag = KolroseRAG(vectorstore) if vectorstore else None
-print(f"✅ RAG system ready: {rag is not None}")
+print(f"RAG system ready: {rag is not None}")
 
+# Initialize guardrails
 print("🔄 Initializing guardrails...")
 guardrails = GuardrailSystem() if vectorstore else None
-print(f"✅ Guardrails ready: {guardrails is not None}")
+print(f"Guardrails ready: {guardrails is not None}")
 
 SYSTEM_READY = rag is not None
 
-# Warm up the system
+# Warm up
 if SYSTEM_READY:
     try:
-        print("🔄 Warming up RAG system...")
-        _ = rag.query("test warmup", k_final=1, enable_rerank=False, enable_guardrails=False)
-        print("✅ System warm-up complete!")
+        print("🔄 Warming up RAG system (test query)...")
+        _ = rag.query("test", k_final=1, enable_rerank=False, enable_guardrails=False)
+        print("✅ Warm-up complete!")
     except Exception as e:
         print(f"⚠️ Warm-up warning: {e}")
 
@@ -143,10 +146,6 @@ def read_root():
         "status": "online",
         "ready": SYSTEM_READY,
         "documentation": "/docs",
-        "endpoints": {
-            "health": "/health",
-            "chat": "/chat"
-        }
     }
 
 
@@ -172,7 +171,7 @@ def health():
 def chat(req: ChatRequest):
     if not SYSTEM_READY:
         raise HTTPException(
-            503, 
+            503,
             "System is warming up. Please try again in 30 seconds."
         )
 
