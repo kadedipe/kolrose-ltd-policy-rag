@@ -23,7 +23,16 @@ SECRET_KEY = os.environ.get("JWT_SECRET_KEY", "kolrose-secret-key-change-in-prod
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# FIXED: Use bcrypt with explicit backend detection and fallback
+try:
+    pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__default_rounds=12)
+    # Test if bcrypt works
+    pwd_context.hash("test")
+except (ValueError, Exception) as e:
+    # Fallback to sha256_crypt if bcrypt has issues
+    print(f"⚠️ bcrypt unavailable ({e}), using sha256_crypt fallback")
+    pwd_context = CryptContext(schemes=["sha256_crypt"], deprecated="auto")
+
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 # ============================================================================
@@ -163,7 +172,7 @@ def init_users():
                 full_name="System Administrator",
                 department="Administration",
                 role=UserRole.ADMIN,
-                hashed_password=pwd_context.hash("Admin@Kolrose2024"),
+                hashed_password=get_password_hash("Admin@Kolrose2024"),
             ),
             UserInDB(
                 username="hr_manager",
@@ -171,7 +180,7 @@ def init_users():
                 full_name="HR Manager",
                 department="Human Resources",
                 role=UserRole.HR_MANAGER,
-                hashed_password=pwd_context.hash("HR@Kolrose2024"),
+                hashed_password=get_password_hash("HR@Kolrose2024"),
             ),
             UserInDB(
                 username="manager",
@@ -179,7 +188,7 @@ def init_users():
                 full_name="Department Manager",
                 department="Management",
                 role=UserRole.MANAGER,
-                hashed_password=pwd_context.hash("Manager@Kolrose2024"),
+                hashed_password=get_password_hash("Manager@Kolrose2024"),
             ),
             UserInDB(
                 username="employee",
@@ -187,7 +196,7 @@ def init_users():
                 full_name="John Doe",
                 department="Human Resources",
                 role=UserRole.EMPLOYEE,
-                hashed_password=pwd_context.hash("Employee@Kolrose2024"),
+                hashed_password=get_password_hash("Employee@Kolrose2024"),
             ),
             UserInDB(
                 username="it_support",
@@ -195,7 +204,7 @@ def init_users():
                 full_name="IT Support",
                 department="Information Technology",
                 role=UserRole.EMPLOYEE,
-                hashed_password=pwd_context.hash("IT@Kolrose2024"),
+                hashed_password=get_password_hash("IT@Kolrose2024"),
             ),
             UserInDB(
                 username="finance_user",
@@ -203,7 +212,7 @@ def init_users():
                 full_name="Finance Officer",
                 department="Finance",
                 role=UserRole.EMPLOYEE,
-                hashed_password=pwd_context.hash("Finance@Kolrose2024"),
+                hashed_password=get_password_hash("Finance@Kolrose2024"),
             ),
             UserInDB(
                 username="viewer",
@@ -211,7 +220,7 @@ def init_users():
                 full_name="Guest Viewer",
                 department="Administration",
                 role=UserRole.VIEWER,
-                hashed_password=pwd_context.hash("Viewer@Kolrose2024"),
+                hashed_password=get_password_hash("Viewer@Kolrose2024"),
             ),
         ]
         
@@ -233,7 +242,9 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 
 
 def get_password_hash(password: str) -> str:
-    """Hash a password"""
+    """Hash a password - truncate to 72 bytes for bcrypt compatibility"""
+    if len(password.encode('utf-8')) > 72:
+        password = password[:72]
     return pwd_context.hash(password)
 
 

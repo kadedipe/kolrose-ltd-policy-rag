@@ -12,6 +12,7 @@ python-multipart>=0.0.6
 # Authentication & Security
 python-jose[cryptography]>=3.3.0
 passlib[bcrypt]>=1.7.4
+bcrypt==4.0.1
 
 # Environment & Configuration
 python-dotenv>=1.0.0
@@ -59,5 +60,5 @@ markdown>=3.5.0
 beautifulsoup4>=4.12.0
 lxml>=5.0.0
 
-# Image Processing (for logo)
+# Image Processing
 Pillow>=10.0.0
