@@ -62,16 +62,18 @@ class APIConfig:
     """API-related configuration"""
     openrouter_api_key: str = ""
     openrouter_base_url: str = "https://openrouter.ai/api/v1"
-    default_model: str = "google/gemini-2.0-flash-001"
+    default_model: str = "openrouter/free"
     max_tokens: int = 500
     temperature: float = 0.0
     request_timeout: int = 30
     max_retries: int = 3
     
     free_models: List[str] = field(default_factory=lambda: [
-        "google/gemini-2.0-flash-001",
+        "openrouter/free",
+        "google/gemma-4-31b",
+        "tencent/hy3",
+        "nvidia/nemotron-3-super",
         "meta-llama/llama-3.1-8b-instruct:free",
-        "mistralai/mistral-7b-instruct:free",
     ])
     
     @property
@@ -247,7 +249,7 @@ class ConfigLoader:
         return APIConfig(
             openrouter_api_key=cls._get_env("OPENROUTER_API_KEY", ""),
             openrouter_base_url=cls._get_env("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
-            default_model=cls._get_env("LLM_MODEL", "google/gemini-2.0-flash-001"),
+            default_model=cls._get_env("LLM_MODEL", "openrouter/free"),
             max_tokens=cls._get_int("MAX_OUTPUT_TOKENS", 500),
             temperature=cls._get_float("LLM_TEMPERATURE", 0.0),
             request_timeout=cls._get_int("LLM_REQUEST_TIMEOUT", 30),
@@ -342,7 +344,7 @@ EMBEDDING_DEVICE: str = EMBEDDING_CONFIG.device
 DB_CONFIG: DatabaseConfig = _config['database']
 
 # ============================================================
-# FIXED: CHROMA_PATH with cloud-safe defaults
+# CHROMA_PATH with cloud-safe defaults
 # ============================================================
 IS_CLOUD = bool(
     os.environ.get("RAILWAY_ENVIRONMENT") or 
