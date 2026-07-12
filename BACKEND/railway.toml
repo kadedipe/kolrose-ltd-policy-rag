@@ -3,7 +3,7 @@ builder = "dockerfile"
 dockerfilePath = "DOCKER/Dockerfile.backend"
 
 [deploy]
-preDeployCommand = "cd /app/BACKEND && python -m app.ingestion"
 startCommand = "uvicorn BACKEND.app.api:app --host 0.0.0.0 --port 8080"
+preDeployCommand = "cd /app/BACKEND && python -m app.ingestion"
 restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
