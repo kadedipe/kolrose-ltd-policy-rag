@@ -6,7 +6,6 @@ DATA/
 # policies/
 NOTEBOOKS/
 evaluation_results/
-docs/images/
 .nixpacks/
 
 *.ipynb
