@@ -1,4 +1,5 @@
-cat > BACKEND/railway.toml << 'EOF'
+
+
 [build]
 builder = "dockerfile"
 dockerfilePath = "DOCKER/Dockerfile.backend"
@@ -8,4 +9,3 @@ dockerfilePath = "DOCKER/Dockerfile.backend"
 startCommand = "uvicorn BACKEND.app.api:app --host 0.0.0.0 --port 8080"
 restartPolicy = "ON_FAILURE"
 restartPolicyMaxRetries = 10
-EOF
