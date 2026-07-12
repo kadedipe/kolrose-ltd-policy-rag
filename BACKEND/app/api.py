@@ -2,13 +2,14 @@
 Kolrose Policy RAG - FastAPI Service ONLY
 ==========================================
 Handles /, /chat, and /health endpoints.
+No Streamlit code here.
 """
 
 import sys
+import os
 from pathlib import Path
 from datetime import datetime
 from typing import List, Dict, Optional
-import time
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -30,7 +31,7 @@ from app.config import (
 )
 from app.rag_system import KolroseRAG
 from app.guardrails import GuardrailSystem
-from app.ingestion import load_vectorstore, check_policies_exist
+from app.ingestion import load_vectorstore, check_policies_exist, ingest_all
 
 # =========================
 # FASTAPI APP
@@ -79,11 +80,34 @@ class ChatResponse(BaseModel):
     timestamp: str
 
 # =========================
-# INIT SYSTEM WITH WARM-UP
+# INIT SYSTEM
 # =========================
+
+print("=" * 50)
+print("🚀 Starting Kolrose Backend API")
+print(f"📂 ChromaDB Path: {CHROMA_PATH}")
+print(f"📄 Policies Path: {POLICIES_PATH}")
+print("=" * 50)
 
 print("🔄 Loading vector store...")
 vectorstore = load_vectorstore()
+
+# If vector store failed, try auto-ingestion
+if vectorstore is None:
+    print("⚠️ Vector store not found. Attempting automatic ingestion...")
+    policies_exist, policy_count, _ = check_policies_exist()
+    
+    if policies_exist:
+        print(f"📁 Found {policy_count} policy files. Starting ingestion...")
+        vectorstore = ingest_all()
+        
+        if vectorstore:
+            print("✅ Automatic ingestion successful!")
+        else:
+            print("❌ Automatic ingestion failed!")
+    else:
+        print(f"❌ No policy files found in: {POLICIES_PATH}")
+
 print(f"✅ Vector store loaded: {vectorstore is not None}")
 
 print("🔄 Initializing RAG system...")
@@ -94,19 +118,19 @@ print("🔄 Initializing guardrails...")
 guardrails = GuardrailSystem() if vectorstore else None
 print(f"✅ Guardrails ready: {guardrails is not None}")
 
-# Pre-warm the system with a test query
 SYSTEM_READY = rag is not None
 
+# Warm up the system
 if SYSTEM_READY:
     try:
         print("🔄 Warming up RAG system...")
-        # Run a dummy query to load models into memory
         _ = rag.query("test warmup", k_final=1, enable_rerank=False, enable_guardrails=False)
         print("✅ System warm-up complete!")
     except Exception as e:
-        print(f"⚠️ Warm-up warning (non-critical): {e}")
+        print(f"⚠️ Warm-up warning: {e}")
 
 print(f"🚀 System ready: {SYSTEM_READY}")
+print("=" * 50)
 
 # =========================
 # ENDPOINTS
@@ -130,7 +154,8 @@ def read_root():
 def health():
     policies_exist, policy_count, _ = check_policies_exist()
     return {
-        "status": "healthy" if SYSTEM_READY else "warming_up",
+        "status": "healthy" if SYSTEM_READY else "degraded",
+        "ready": SYSTEM_READY,
         "company": COMPANY_INFO["name"],
         "timestamp": datetime.now().isoformat(),
         "components": {
@@ -140,7 +165,6 @@ def health():
             "llm": bool(OPENROUTER_API_KEY),
             "guardrails": ENABLE_GUARDRAILS,
         },
-        "ready": SYSTEM_READY,
     }
 
 
