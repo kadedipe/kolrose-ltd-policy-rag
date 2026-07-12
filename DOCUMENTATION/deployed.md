@@ -4,7 +4,9 @@ markdown
 The Kolrose Limited AI Policy Assistant is deployed and accessible at the following URL:
 
 ## 🔗 Live Application Link
-**https://kolrose-policy-rag-production-d0bc.up.railway.app/**
+Frontend: **https://kolrose-frontend-production.up.railway.app/**
+Backend API: **https://kolrose-backend-production.up.railway.app/**
+API Docs: **https://kolrose-backend-production.up.railway.app/docs/**
 
 ---
 
@@ -22,7 +24,7 @@ Monitor your deployment at [railway.app](https://railway.app)
 
 | Platform | Status | URL |
 |----------|--------|-----|
-| **Railway** | ✅ **Primary** | [https://kolrose-policy-rag-production-d0bc.up.railway.app/](https://kolrose-policy-rag-production-d0bc.up.railway.app/) |
+| **Railway** | ✅ **Primary** | [https://kolrose-frontend-production.up.railway.app/](https://kolrose-frontend-production.up.railway.app/) |
 | Streamlit Cloud | 🔄 Backup | kolrose-policy-rag.streamlit.app |
 | Render | 🔄 Backup | kolrose-policy-rag.onrender.com |
 

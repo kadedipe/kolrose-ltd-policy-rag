@@ -120,8 +120,7 @@ graph TB
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/kolrose/policy-rag.git
-cd kolrose-policy-rag
+git clone https://github.com/kadedipe/kolrose-ltd-policy-rag.git
 
 # 2. Create virtual environment
 python -m venv venv
@@ -142,7 +141,7 @@ python -m app.ingestion
 # 7. Launch the app
 streamlit run app/main.py
 
-# 8. Open http://localhost:8501
+# 8. Open http://localhost:8080
 🔧 Installation
 Prerequisites
 Requirement	Version	Check Command
@@ -154,7 +153,7 @@ Disk Space	~2 GB	For embedding model and vector store
 Step-by-Step
 1. Clone the Repository
 bash
-git clone https://github.com/kolrose/policy-rag.git
+git clone https://github.com/kadedipe/kolrose-ltd-policy-rag.git
 cd kolrose-policy-rag
 2. Set Up Virtual Environment
 bash
@@ -177,7 +176,7 @@ Required settings in .env:
 
 bash
 OPENROUTER_API_KEY=sk-or-v1-your-key-here
-LLM_MODEL=google/gemini-2.0-flash-001
+LLM_MODEL=openrouter/free
 5. Add Policy Documents
 Place your 12 Kolrose policy markdown files in the ./policies/ directory:
 
@@ -211,7 +210,7 @@ streamlit run app/main.py
 
 # Or use the entry point
 streamlit run streamlit_app.py
-Open http://localhost:8501 in your browser.
+Open http://localhost:8080 in your browser.
 
 Python API
 python
