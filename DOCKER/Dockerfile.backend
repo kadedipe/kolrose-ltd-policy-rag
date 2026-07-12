@@ -1,25 +1,73 @@
 # DOCKER/Dockerfile.backend
+# Kolrose Limited - Backend API Service
+# CPU-optimized for Railway free tier (8 GB limit)
+
 FROM python:3.11-slim
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl \
-    && rm -rf /var/lib/apt/lists/*
+# ============================================================================
+# Install ONLY essential system dependencies
+# ============================================================================
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
 
+# ============================================================================
+# Install Python dependencies
+# ============================================================================
 COPY BACKEND/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir \
+    --disable-pip-version-check \
+    -r requirements.txt \
+    && rm -rf /root/.cache/pip
 
+# ============================================================================
+# Copy application code
+# ============================================================================
 COPY BACKEND/ ./BACKEND/
 
+# ============================================================================
+# Environment variables for memory optimization
+# ============================================================================
 ENV PYTHONUNBUFFERED=1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONOPTIMIZE=1
+
+# CPU-only ML settings
+ENV CUDA_VISIBLE_DEVICES=""
+ENV TORCH_DEVICE=cpu
+ENV EMBEDDING_DEVICE=cpu
+
+# Limit thread count to reduce memory usage
+ENV OMP_NUM_THREADS=1
+ENV MKL_NUM_THREADS=1
+ENV NUMEXPR_NUM_THREADS=1
+
+# ChromaDB and policies paths
 ENV CHROMA_PATH=/tmp/chroma_db
 ENV POLICIES_PATH=/app/BACKEND/policies
 
+# Create writable temp directory for ChromaDB
 RUN mkdir -p /tmp/chroma_db
 
+# Expose port
 EXPOSE 8080
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
+# ============================================================================
+# Health check (longer start period for cold starts)
+# ============================================================================
+HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
     CMD curl -f http://localhost:8080/health || exit 1
 
-CMD ["uvicorn", "BACKEND.app.api:app", "--host", "0.0.0.0", "--port", "8080"]
+# ============================================================================
+# Start with memory-optimized uvicorn settings
+# ============================================================================
+CMD ["uvicorn", "BACKEND.app.api:app", \
+     "--host", "0.0.0.0", \
+     "--port", "8080", \
+     "--workers", "1", \
+     "--limit-concurrency", "10", \
+     "--limit-max-requests", "100", \
+     "--timeout-keep-alive", "30"]

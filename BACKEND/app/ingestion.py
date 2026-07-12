@@ -48,6 +48,16 @@ from .config import (
     COMPANY_INFO,
 )
 
+# Import performance logging if available
+try:
+    from .logging_config import log_performance
+except ImportError:
+    # Fallback: simple no-op decorator
+    def log_performance(name=None):
+        def decorator(func):
+            return func
+        return decorator
+
 logger = logging.getLogger(__name__)
 
 # Try to load environment variables
@@ -415,6 +425,7 @@ class PolicyDocumentLoader:
 _embeddings_model = None
 
 
+@log_performance("load_embeddings")
 def load_embeddings(
     model_name: str = EMBEDDING_MODEL,
     device: str = EMBEDDING_DEVICE,
@@ -513,6 +524,7 @@ class VectorStoreManager:
 # MAIN INGESTION FUNCTION
 # ============================================================================
 
+@log_performance("ingest_policies")
 def ingest_policies(
     policies_path: str = POLICIES_PATH,
     chroma_path: str = CHROMA_PATH,
@@ -660,6 +672,7 @@ def load_vectorstore(
 # AUTO-INGESTION FALLBACK (for Cloud/Cold Starts)
 # ============================================================================
 
+@log_performance("ingest_all")
 def ingest_all(
     policies_path: Optional[str] = None,
     chroma_path: Optional[str] = None,

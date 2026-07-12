@@ -8,7 +8,7 @@ Handles:
 - Configuration validation
 - Sensible defaults for all settings
 - Type casting and error handling
-- Configuration categories (API, DB, Guardrails, etc.)
+- Configuration categories (API, DB, Guardrails, Auth, Logging, etc.)
 """
 
 import os
@@ -146,6 +146,33 @@ class GuardrailConfig:
 
 
 @dataclass
+class AuthConfig:
+    """Authentication configuration"""
+    jwt_secret_key: str = "kolrose-secret-key-change-in-production-2024"
+    jwt_algorithm: str = "HS256"
+    access_token_expire_minutes: int = 1440  # 24 hours
+    bcrypt_rounds: int = 12
+
+
+@dataclass
+class LoggingConfig:
+    """Logging configuration"""
+    level: str = "INFO"
+    format_type: str = "auto"  # auto, json, pretty
+    log_file: Optional[str] = None
+    enable_audit: bool = True
+    enable_metrics: bool = True
+
+
+@dataclass
+class MemoryConfig:
+    """Conversation memory configuration"""
+    ttl_minutes: int = 120  # Conversations expire after 2 hours
+    max_messages_per_conversation: int = 50
+    max_context_exchanges: int = 5
+
+
+@dataclass
 class CompanyConfig:
     """Company-specific configuration"""
     name: str = "Kolrose Limited"
@@ -240,6 +267,9 @@ class ConfigLoader:
             'database': cls.load_database_config(),
             'rag': cls.load_rag_config(),
             'guardrails': cls.load_guardrail_config(),
+            'auth': cls.load_auth_config(),
+            'logging': cls.load_logging_config(),
+            'memory': cls.load_memory_config(),
             'company': cls.load_company_config(),
             'app': cls.load_app_config(),
         }
@@ -293,6 +323,31 @@ class ConfigLoader:
             citation_required=cls._get_bool("CITATION_REQUIRED", True),
             max_response_chars=cls._get_int("MAX_RESPONSE_CHARS", 2000),
             max_sentences=cls._get_int("MAX_SENTENCES", 10),
+        )
+    
+    @classmethod
+    def load_auth_config(cls) -> AuthConfig:
+        return AuthConfig(
+            jwt_secret_key=cls._get_env("JWT_SECRET_KEY", "kolrose-secret-key-change-in-production-2024"),
+            jwt_algorithm=cls._get_env("JWT_ALGORITHM", "HS256"),
+            access_token_expire_minutes=cls._get_int("JWT_EXPIRE_MINUTES", 1440),
+        )
+    
+    @classmethod
+    def load_logging_config(cls) -> LoggingConfig:
+        return LoggingConfig(
+            level=cls._get_env("LOG_LEVEL", "INFO"),
+            format_type=cls._get_env("LOG_FORMAT", "auto"),
+            enable_audit=cls._get_bool("ENABLE_AUDIT_LOG", True),
+            enable_metrics=cls._get_bool("ENABLE_METRICS", True),
+        )
+    
+    @classmethod
+    def load_memory_config(cls) -> MemoryConfig:
+        return MemoryConfig(
+            ttl_minutes=cls._get_int("MEMORY_TTL_MINUTES", 120),
+            max_messages_per_conversation=cls._get_int("MEMORY_MAX_MESSAGES", 50),
+            max_context_exchanges=cls._get_int("MEMORY_CONTEXT_EXCHANGES", 5),
         )
     
     @classmethod
@@ -386,6 +441,23 @@ SENSITIVE_TOPICS_ENABLED: bool = GUARDRAIL_CONFIG.sensitive_topics_enabled
 CITATION_REQUIRED: bool = GUARDRAIL_CONFIG.citation_required
 MAX_RESPONSE_CHARS: int = GUARDRAIL_CONFIG.max_response_chars
 
+# Auth Configuration
+AUTH_CONFIG: AuthConfig = _config['auth']
+JWT_SECRET_KEY: str = AUTH_CONFIG.jwt_secret_key
+JWT_ALGORITHM: str = AUTH_CONFIG.jwt_algorithm
+JWT_EXPIRE_MINUTES: int = AUTH_CONFIG.access_token_expire_minutes
+
+# Logging Configuration
+LOGGING_CONFIG: LoggingConfig = _config['logging']
+LOG_FORMAT: str = LOGGING_CONFIG.format_type
+ENABLE_AUDIT_LOG: bool = LOGGING_CONFIG.enable_audit
+ENABLE_METRICS: bool = LOGGING_CONFIG.enable_metrics
+
+# Memory Configuration
+MEMORY_CONFIG: MemoryConfig = _config['memory']
+MEMORY_TTL_MINUTES: int = MEMORY_CONFIG.ttl_minutes
+MEMORY_MAX_MESSAGES: int = MEMORY_CONFIG.max_messages_per_conversation
+
 # Company Configuration
 COMPANY_CONFIG: CompanyConfig = _config['company']
 COMPANY_INFO: Dict[str, str] = {
@@ -420,6 +492,9 @@ def validate_config() -> Dict[str, Any]:
         report['issues'].append("OPENROUTER_API_KEY is still set to placeholder.")
         report['valid'] = False
     
+    if JWT_SECRET_KEY == "kolrose-secret-key-change-in-production-2024":
+        report['warnings'].append("JWT_SECRET_KEY is using default value. Change in production!")
+    
     policies_path = Path(POLICIES_PATH)
     if not policies_path.exists():
         report['warnings'].append(f"Policies directory not found: {POLICIES_PATH}")
@@ -446,6 +521,8 @@ def print_config(show_secrets: bool = False):
     print(f"💾 ChromaDB: {CHROMA_PATH}")
     print(f"📄 Policies: {POLICIES_PATH}")
     print(f"☁️ Cloud: {IS_CLOUD}")
+    print(f"🔐 Auth: {'✅ Configured' if JWT_SECRET_KEY != 'kolrose-secret-key-change-in-production-2024' else '⚠️ Default'}")
+    print(f"📝 Logging: {LOG_FORMAT}")
     print("=" * 60 + "\n")
 
 
@@ -456,10 +533,9 @@ def load_streamlit_secrets():
         if hasattr(st, 'secrets'):
             try:
                 secrets = st.secrets
-                if 'OPENROUTER_API_KEY' in secrets:
-                    os.environ['OPENROUTER_API_KEY'] = secrets['OPENROUTER_API_KEY']
-                if 'LLM_MODEL' in secrets:
-                    os.environ['LLM_MODEL'] = secrets['LLM_MODEL']
+                for key in ['OPENROUTER_API_KEY', 'LLM_MODEL', 'JWT_SECRET_KEY']:
+                    if key in secrets:
+                        os.environ[key] = secrets[key]
                 logger.info("✅ Loaded configuration from Streamlit secrets")
             except Exception:
                 pass

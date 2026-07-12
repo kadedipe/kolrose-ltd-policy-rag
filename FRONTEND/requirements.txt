@@ -1,3 +1,15 @@
+# ============================================================================
+# Kolrose Policy Assistant - Frontend Requirements (Minimal)
+# ============================================================================
+
+# UI Framework
 streamlit>=1.28.0
+
+# HTTP Client
 requests>=2.31.0
+
+# Environment Configuration
 python-dotenv>=1.0.0
+
+# Image Processing (for company logo)
+Pillow>=10.0.0
