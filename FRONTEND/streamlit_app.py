@@ -75,30 +75,66 @@ with st.sidebar:
     
     st.header("🔗 Connection Status")
     
-    # FIXED: Increased timeout from 5 to 30 seconds for cold starts
+    # Initialize session state for backend status
+    if "backend_ready" not in st.session_state:
+        st.session_state.backend_ready = False
+    if "backend_data" not in st.session_state:
+        st.session_state.backend_data = None
+    
     with st.spinner("Checking backend (may take up to 30s for cold start)..."):
         try:
             health = requests.get(f"{BACKEND_URL}/health", timeout=30)
             if health.status_code == 200:
                 data = health.json()
-                st.success("✅ Backend Online")
+                st.session_state.backend_data = data
                 
-                components = data.get("components", {})
-                if components.get("policies"):
-                    st.metric("📄 Policies Available", components["policies"])
-                if components.get("guardrails"):
-                    st.metric("🛡️ Guardrails", "Active")
+                # CHECK IF SYSTEM IS FULLY READY OR STILL WARMING UP
+                if data.get("ready", False):
+                    st.session_state.backend_ready = True
+                    st.success("✅ Backend Online")
+                    
+                    # Show system components
+                    components = data.get("components", {})
+                    col_a, col_b = st.columns(2)
+                    with col_a:
+                        if components.get("policies"):
+                            st.metric("📄 Policies", components["policies"])
+                    with col_b:
+                        if components.get("rag_system"):
+                            st.metric("🧠 RAG System", "Ready")
+                    
+                    if components.get("guardrails"):
+                        st.metric("🛡️ Guardrails", "Active")
+                        
+                elif data.get("status") == "warming_up":
+                    st.session_state.backend_ready = False
+                    st.warning("⏳ System is warming up...")
+                    st.caption("Loading embedding models and initializing RAG system.")
+                    st.caption("This usually takes 30-60 seconds.")
+                    st.progress(0.5, "Loading models...")
+                    
+                else:
+                    st.session_state.backend_ready = False
+                    st.warning("⚠️ Backend status unknown")
+                    
             else:
+                st.session_state.backend_ready = False
                 st.error(f"❌ Backend Error ({health.status_code})")
+                
         except requests.exceptions.Timeout:
+            st.session_state.backend_ready = False
             st.warning("⏱️ Backend is waking up (cold start). Please wait a moment and refresh.")
         except requests.exceptions.ConnectionError:
+            st.session_state.backend_ready = False
             st.error("❌ Backend Offline. Check if backend service is running.")
         except Exception as e:
+            st.session_state.backend_ready = False
             st.warning(f"⚠️ {str(e)[:50]}")
     
-    # FIXED: Added manual retry button
+    # Manual retry button
     if st.button("🔄 Retry Connection", use_container_width=True):
+        st.session_state.backend_ready = False
+        st.session_state.backend_data = None
         st.rerun()
     
     st.divider()
@@ -167,60 +203,71 @@ if question:
     
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("🔍 Searching policies (this may take a moment for cold starts)...")
         
-        # FIXED: Increased timeout from 60 to 120 seconds
-        try:
-            res = requests.post(
-                f"{BACKEND_URL}/chat",
-                json={
-                    "question": question,
-                    "k_results": k_results,
-                    "include_snippets": True
-                },
-                timeout=120
+        # CHECK IF BACKEND IS READY BEFORE MAKING REQUEST
+        if not st.session_state.backend_ready:
+            message_placeholder.warning(
+                "⏳ The backend is still warming up. Please wait a moment and try again.\n\n"
+                "Click '🔄 Retry Connection' in the sidebar to check status."
             )
+        else:
+            message_placeholder.markdown("🔍 Searching policies...")
             
-            if res.status_code == 200:
-                data = res.json()
-                answer = data.get("answer", "No answer returned")
-                citations = data.get("citations", [])
-                sources = data.get("sources", [])
-                refused = data.get("refused", False)
+            try:
+                res = requests.post(
+                    f"{BACKEND_URL}/chat",
+                    json={
+                        "question": question,
+                        "k_results": k_results,
+                        "include_snippets": True
+                    },
+                    timeout=120
+                )
                 
-                if refused:
-                    message_placeholder.warning(answer)
+                if res.status_code == 200:
+                    data = res.json()
+                    answer = data.get("answer", "No answer returned")
+                    citations = data.get("citations", [])
+                    sources = data.get("sources", [])
+                    refused = data.get("refused", False)
+                    
+                    if refused:
+                        message_placeholder.warning(answer)
+                    else:
+                        message_placeholder.markdown(answer)
+                    
+                    if citations:
+                        with st.expander("📚 Citations"):
+                            for citation in citations:
+                                st.markdown(f"- {citation}")
+                    
+                    if sources:
+                        with st.expander("📄 Sources"):
+                            for source in sources:
+                                st.markdown(f"""
+                                **{source.get('document_id', 'N/A')}** — {source.get('policy_name', 'Unknown')}  
+                                📁 {source.get('source_file', 'N/A')}
+                                """)
+                    
+                    st.session_state.messages.append({
+                        "role": "assistant",
+                        "content": answer,
+                        "citations": citations,
+                        "sources": sources
+                    })
+                    
+                elif res.status_code == 503:
+                    message_placeholder.warning(
+                        "⏳ System is still starting up.\n\n"
+                        "The embedding models are loading. This happens on cold starts.\n"
+                        "Please wait 30-60 seconds and try again."
+                    )
                 else:
-                    message_placeholder.markdown(answer)
-                
-                if citations:
-                    with st.expander("📚 Citations"):
-                        for citation in citations:
-                            st.markdown(f"- {citation}")
-                
-                if sources:
-                    with st.expander("📄 Sources"):
-                        for source in sources:
-                            st.markdown(f"""
-                            **{source.get('document_id', 'N/A')}** — {source.get('policy_name', 'Unknown')}  
-                            📁 {source.get('source_file', 'N/A')}
-                            """)
-                
-                st.session_state.messages.append({
-                    "role": "assistant",
-                    "content": answer,
-                    "citations": citations,
-                    "sources": sources
-                })
-                
-            elif res.status_code == 503:
-                message_placeholder.warning("⏳ System is still starting up. Please wait a moment and try again.")
-            else:
-                message_placeholder.error(f"❌ Backend Error ({res.status_code}): {res.text[:200]}")
-                
-        except requests.exceptions.Timeout:
-            message_placeholder.error("⏱️ Request timed out. The backend may be starting up. Please try again in 30 seconds.")
-        except requests.exceptions.ConnectionError:
-            message_placeholder.error(f"❌ Cannot connect to backend.\n\nURL: {BACKEND_URL}")
-        except Exception as e:
-            message_placeholder.error(f"❌ Error: {str(e)[:200]}")
+                    message_placeholder.error(f"❌ Backend Error ({res.status_code}): {res.text[:200]}")
+                    
+            except requests.exceptions.Timeout:
+                message_placeholder.error("⏱️ Request timed out. The backend may be starting up. Please try again in 30 seconds.")
+            except requests.exceptions.ConnectionError:
+                message_placeholder.error(f"❌ Cannot connect to backend.\n\nURL: {BACKEND_URL}")
+            except Exception as e:
+                message_placeholder.error(f"❌ Error: {str(e)[:200]}")
