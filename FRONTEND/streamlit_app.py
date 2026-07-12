@@ -20,7 +20,8 @@ BACKEND_URL = os.environ.get(
 
 # Logo path - tries local file first, falls back to URL
 LOGO_PATH = os.path.join(os.path.dirname(__file__), "static", "kolrose.jfif")
-LOGO_URL = "https://github.com/kadedipe/kolrose-ltd-policy-rag/blob/main/docs/images/kolrose.jfif"
+LOGO_URL = "https://raw.githubusercontent.com/kadedipe/kolrose-ltd-policy-rag/main/docs/images/kolrose.jfif"
+
 # =========================
 # STREAMLIT UI SETUP
 # =========================
@@ -74,9 +75,10 @@ with st.sidebar:
     
     st.header("🔗 Connection Status")
     
-    with st.spinner("Checking backend..."):
+    # FIXED: Increased timeout from 5 to 30 seconds for cold starts
+    with st.spinner("Checking backend (may take up to 30s for cold start)..."):
         try:
-            health = requests.get(f"{BACKEND_URL}/health", timeout=5)
+            health = requests.get(f"{BACKEND_URL}/health", timeout=30)
             if health.status_code == 200:
                 data = health.json()
                 st.success("✅ Backend Online")
@@ -89,11 +91,15 @@ with st.sidebar:
             else:
                 st.error(f"❌ Backend Error ({health.status_code})")
         except requests.exceptions.Timeout:
-            st.warning("⏱️ Backend Slow")
+            st.warning("⏱️ Backend is waking up (cold start). Please wait a moment and refresh.")
         except requests.exceptions.ConnectionError:
-            st.error("❌ Backend Offline")
+            st.error("❌ Backend Offline. Check if backend service is running.")
         except Exception as e:
             st.warning(f"⚠️ {str(e)[:50]}")
+    
+    # FIXED: Added manual retry button
+    if st.button("🔄 Retry Connection", use_container_width=True):
+        st.rerun()
     
     st.divider()
     
@@ -161,8 +167,9 @@ if question:
     
     with st.chat_message("assistant"):
         message_placeholder = st.empty()
-        message_placeholder.markdown("🔍 Searching policies...")
+        message_placeholder.markdown("🔍 Searching policies (this may take a moment for cold starts)...")
         
+        # FIXED: Increased timeout from 60 to 120 seconds
         try:
             res = requests.post(
                 f"{BACKEND_URL}/chat",
@@ -171,7 +178,7 @@ if question:
                     "k_results": k_results,
                     "include_snippets": True
                 },
-                timeout=60
+                timeout=120
             )
             
             if res.status_code == 200:
@@ -206,11 +213,13 @@ if question:
                     "sources": sources
                 })
                 
+            elif res.status_code == 503:
+                message_placeholder.warning("⏳ System is still starting up. Please wait a moment and try again.")
             else:
-                message_placeholder.error(f"❌ Backend Error ({res.status_code})")
+                message_placeholder.error(f"❌ Backend Error ({res.status_code}): {res.text[:200]}")
                 
         except requests.exceptions.Timeout:
-            message_placeholder.error("⏱️ Request timed out. Please try again.")
+            message_placeholder.error("⏱️ Request timed out. The backend may be starting up. Please try again in 30 seconds.")
         except requests.exceptions.ConnectionError:
             message_placeholder.error(f"❌ Cannot connect to backend.\n\nURL: {BACKEND_URL}")
         except Exception as e:
